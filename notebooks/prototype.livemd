@@ -1,0 +1,332 @@
+# Kino Text-to-Speech Prototype
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.10.0"}
+])
+```
+
+## Preamble
+
+The primary goal of this Livebook is to assess whether the [Web SpeechSynthesis API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis) can be easily integrated as a Kino or SmartCell.
+
+We'll start with SmartCell since it has UI components we could leverage for selecting voices.
+
+Features
+
+* Simulate a real behavioral interview as close as possible.
+* Can we evaluate multiple cells sequentially but in a blocking manner? The idea is cell 1 speaks, then 2, etc. We likely do not want to fork or they may try to run in parallel.
+
+```elixir
+defmodule SpeechSynthesis.SmartCell do
+  use Kino.JS
+  use Kino.JS.Live
+  use Kino.SmartCell, name: "Speech Synthesis"
+
+  @impl true
+  def init(attrs, ctx) do
+    text = attrs["text"] || ""
+
+    ctx =
+      assign(ctx,
+        text: Kino.SmartCell.prefixed_var_name("text", text)
+      )
+
+    editor = [
+      attribute: "text",
+      language: "markdown",
+      default_source: text
+    ]
+
+    {:ok, ctx, editor: editor}
+  end
+
+  @impl true
+  def scan_eval_result(server, eval_result) do
+    {:ok, %Kino.Markdown{content: text}} = eval_result
+    send(server, {:speak, text})
+  end
+
+  @impl true
+  def handle_connect(ctx) do
+    payload = %{
+      text: ctx.assigns.text
+    }
+
+    {:ok, payload, ctx}
+  end
+
+  @impl true
+  def handle_event("update_text", text, ctx) do
+    ctx =
+      if Kino.SmartCell.valid_variable_name?(text) do
+        assign(ctx, text: text)
+      else
+        ctx
+      end
+
+    broadcast_event(ctx, "update_text", ctx.assigns.text)
+
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_info({:speak, text}, ctx) do
+    broadcast_event(ctx, "speak", %{text: text})
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def to_attrs(ctx) do
+    %{
+      "text" => ctx.assigns.text
+    }
+  end
+
+  @impl true
+  def to_source(attrs) do
+    quote do
+      unquote(attrs["text"])
+    end
+    |> String.split(" ")
+    |> List.insert_at(0, "**Speaking**: ")
+    |> Enum.join(" ")
+    |> Kino.Markdown.new()
+    |> Kino.SmartCell.quoted_to_string()
+  end
+
+  asset "main.js" do
+    """
+    const synth = window.speechSynthesis;
+    let voices = [];
+
+    export function init(ctx, data) {
+      ctx.importCSS(
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
+      );
+      ctx.importCSS("main.css");
+
+      ctx.synth = synth;
+
+      ctx.root.innerHTML = `
+        <div class="app">
+          <div class="header">
+            <select id="voices" class="input"></select>
+            <input type="range" min="0.5" max="2" value="1" step="0.1" id="rate" />
+            <input type="range" min="0" max="2" value="1" step="0.1" id="pitch" />
+          </div>
+        </div>
+      `;
+
+      ctx.handleSync(() => {
+        // Synchronously invokes change listeners
+        document.activeElement &&
+          document.activeElement.dispatchEvent(new Event("change"));
+      });
+
+      function populateVoiceList() {
+        // voices = synth.getVoices().sort(function (a, b) {
+        //   const aname = a.name.toUpperCase();
+        //   const bname = b.name.toUpperCase();
+
+        //   if (aname < bname) {
+        //     return -1;
+        //   } else if (aname == bname) {
+        //     return 0;
+        //   } else {
+        //     return +1;
+        //   }
+        // });
+        // console.log(voices);
+
+        voices = synth.getVoices();
+        const voiceSelect = document.querySelector("#voices");
+        const selectedIndex = voiceSelect.selectedIndex < 0 ? 0 : voiceSelect.selectedIndex;
+        voiceSelect.innerHTML = "";
+
+        for (let i = 0; i < voices.length; i++) {
+          const option = document.createElement("option");
+          option.textContent = `${voices[i].name} (${voices[i].lang})`;
+
+          if (voices[i].default) {
+            option.textContent += " -- DEFAULT";
+          }
+
+          option.setAttribute("data-lang", voices[i].lang);
+          option.setAttribute("data-name", voices[i].name);
+          voiceSelect.appendChild(option);
+        }
+
+        voiceSelect.selectedIndex = selectedIndex;
+      }
+
+      if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = setTimeout(function() {
+          populateVoiceList();
+        }, 1000);
+      }
+
+      ctx.handleEvent("speak", ({ text }) => {
+        let speakingText = text.replace("**Speaking**: ", "")
+        console.log(`Speaking: ${speakingText}`);
+
+        const voiceSelect = document.querySelector("#voices");
+        const pitch = document.querySelector("#pitch");
+        const rate = document.querySelector("#rate");
+
+        if (ctx.synth.speaking) {
+          console.error("speechSynthesis.speaking");
+          return;
+        }
+        const utterThis = new SpeechSynthesisUtterance(speakingText);
+
+        const selectedOption =
+          voiceSelect.selectedOptions[0].getAttribute("data-name");
+
+        for (let i = 0; i < voices.length; i++) {
+          if (voices[i].name === selectedOption) {
+            utterThis.voice = voices[i];
+            break;
+          }
+        }
+
+        utterThis.pitch = pitch.value;
+        utterThis.rate = rate.value;
+        synth.speak(utterThis);
+      });
+    }
+    """
+  end
+
+  asset "main.css" do
+    """
+    .app {
+      font-family: "Inter";
+
+      box-sizing: border-box;
+
+      --gray-50: #f8fafc;
+      --gray-100: #f0f5f9;
+      --gray-200: #e1e8f0;
+      --gray-300: #cad5e0;
+      --gray-400: #91a4b7;
+      --gray-500: #61758a;
+      --gray-600: #445668;
+      --gray-700: #304254;
+      --gray-800: #1c2a3a;
+      --gray-900: #0d1829;
+
+      --blue-100: #ecf0ff;
+      --blue-200: #d8e0ff;
+      --blue-600: #3e64ff;
+
+      --green-100: #e9f4e9;
+      --green-200: #d2e7d1;
+      --green-600: #1d891a;
+
+      --yellow-100: #fff7ec;
+      --yellow-600: #ffa83f;
+
+      --red-300: #f1a3a6;
+      --red-500: #e2474d;
+
+      --crimson-100: #ffeff2;
+      --crimson-200: #ffe4e9;
+      --crimson-600: #f56991;
+
+      --magenta-100: #fff1ff;
+      --magenta-200: #fad4fa;
+      --magenta-600: #c689c6;
+
+      --orange-100: #fff5f2;
+      --orange-200: #ffe3d9;
+      --orange-600: #ff9770;
+
+      --teal-blue-100: #edf3fa;
+      --teal-blue-200: #d4e4fa;
+      --teal-blue-600: #88abdb;
+
+      --teal-green-100: #edfaf4;
+      --teal-green-200: #d4fae7;
+      --teal-green-600: #88dbb1;
+
+      --purple-100: #f4f2fd;
+      --purple-200: #d2cbef;
+      --purple-600: #957fef;
+
+      --beige-100: #FBF5F1;
+      --beige-200: #F8EBE4;
+      --beige-600: #EDCDBB;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+      font-family: inherit;
+    }
+
+    .container {
+      border: solid 1px var(--gray-300);
+      border-bottom: solid 1px var(--gray-200);
+      border-radius: 0.5rem;
+      background-color: rgba(248, 250, 252, 0.3);
+    }
+
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      justify-content: flex-start;
+      background-color: var(--blue-100);
+      padding: 16px 16px;
+      border-left: solid 1px var(--gray-300);
+      border-top: solid 1px var(--gray-300);
+      border-right: solid 1px var(--gray-300);
+      border-bottom: solid 1px var(--gray-200);
+      border-radius: 0.5rem 0.5rem 0 0;
+      gap: 16px;
+    }
+
+    .input {
+      padding: 8px 12px;
+      background-color: var(--gray-50);
+      font-size: 0.875rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 0.5rem;
+      color: var(--gray-600);
+    }
+
+    .input::placeholder {
+      color: var(--gray-400);
+    }
+
+    .input:focus {
+      outline: none;
+    }
+
+    select.input {
+      appearance: none;
+      background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik01Ljk5OTg5IDQuOTc2NzFMMTAuMTI0OSAwLjg1MTcwOEwxMS4zMDMyIDIuMDMwMDRMNS45OTk4OSA3LjMzMzM3TDAuNjk2NTU1IDIuMDMwMDRMMS44NzQ4OSAwLjg1MTcwOEw1Ljk5OTg5IDQuOTc2NzFaIiBmaWxsPSIjNjE3NThBIi8+Cjwvc3ZnPgo=");
+      background-repeat: no-repeat;
+      background-position: center right 10px;
+      background-size: 10px;
+      padding-right: 28px;
+    }
+    """
+  end
+end
+
+Kino.SmartCell.register(SpeechSynthesis.SmartCell)
+```
+
+```elixir
+# This is helpful for debugging when you have to run the SmartCell a bunch of times.
+# Otherwise it jumps towards the last cell, which is at the top of the page.
+```
+
+<!-- livebook:{"attrs":{"text":"Male turkeys have beards"},"chunks":null,"kind":"Elixir.SpeechSynthesis.SmartCell","livebook_object":"smart_cell"} -->
+
+```elixir
+%Kino.Markdown{content: "**Speaking**:  Male turkeys have beards"}
+```
