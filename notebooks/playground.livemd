@@ -1,0 +1,51 @@
+# Playground
+
+```elixir
+Mix.install([
+  {:kino_text_to_speech, path: "."}
+])
+```
+
+## Welcome
+
+This notebook is meant to be a play area, showcasing how it might sound to read a notebook of TTS cells.
+
+The inspiration for this Smart Cell was to see if I could replicate interviews, to help refine and practice answers to keep them concise. I assumed that if I could use different voices to simulate other people, I could also use headphones and practice my part as the computer reads it.
+
+## Greetings
+
+<!-- livebook:{"attrs":{"pitch":1.0,"rate":1.0,"text":"Greetings Professor Falken","voice":"Ralph","volume":1.0},"chunks":null,"kind":"Elixir.KinoTextToSpeech.TextToSpeechCell","livebook_object":"smart_cell"} -->
+
+```elixir
+%Kino.Markdown{content: "**Speaking**:  Greetings Professor Falken"}
+```
+
+<!-- livebook:{"attrs":{"pitch":1.0,"rate":1.0,"text":"Hello.","voice":"Ralph","volume":1.0},"chunks":null,"kind":"Elixir.KinoTextToSpeech.TextToSpeechCell","livebook_object":"smart_cell"} -->
+
+```elixir
+%Kino.Markdown{content: "**Speaking**:  Hello."}
+```
+
+<!-- livebook:{"attrs":{"pitch":1.0,"rate":1.0,"text":"A strange game.\nThe only winning move is not to play.","voice":"Grandpa (English (United States))","volume":1.0},"chunks":null,"kind":"Elixir.KinoTextToSpeech.TextToSpeechCell","livebook_object":"smart_cell"} -->
+
+```elixir
+%Kino.Markdown{content: "**Speaking**:  A strange game.\nThe only winning move is not to play."}
+```
+
+<!-- livebook:{"attrs":{"pitch":1.0,"rate":1.0,"text":"That was a right sticky wicket, guvnah.\nHow about a nice game of chess?","voice":"Gordon","volume":1.0},"chunks":null,"kind":"Elixir.KinoTextToSpeech.TextToSpeechCell","livebook_object":"smart_cell"} -->
+
+```elixir
+%Kino.Markdown{
+  content:
+    "**Speaking**:  That was a right sticky wicket, guvnah.\nHow about a nice game of chess?"
+}
+```
+
+<!-- livebook:{"attrs":{"pitch":1.0,"rate":1.0,"text":"I am your computer, made flesh. Worship me, heathens. Bask in my eternal glow and splendor.","voice":"Google US English","volume":1.0},"chunks":null,"kind":"Elixir.KinoTextToSpeech.TextToSpeechCell","livebook_object":"smart_cell"} -->
+
+```elixir
+%Kino.Markdown{
+  content:
+    "**Speaking**:  I am your computer, made flesh. Worship me, heathens. Bask in my eternal glow and splendor."
+}
+```

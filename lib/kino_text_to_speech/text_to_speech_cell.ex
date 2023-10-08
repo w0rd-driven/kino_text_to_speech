@@ -7,6 +7,7 @@ defmodule KinoTextToSpeech.TextToSpeechCell do
   def init(attrs, ctx) do
     text = attrs["text"] || ""
     voice = attrs["voice"] || ""
+    volume = attrs["volume"] || 1.0
     rate = attrs["rate"] || 1.0
     pitch = attrs["pitch"] || 1.0
 
@@ -14,6 +15,7 @@ defmodule KinoTextToSpeech.TextToSpeechCell do
       assign(ctx,
         text: Kino.SmartCell.prefixed_var_name("text", text),
         voice: voice,
+        volume: volume,
         rate: rate,
         pitch: pitch
       )
@@ -38,6 +40,7 @@ defmodule KinoTextToSpeech.TextToSpeechCell do
     payload = %{
       text: ctx.assigns.text,
       voice: ctx.assigns.voice,
+      volume: ctx.assigns.volume,
       rate: ctx.assigns.rate,
       pitch: ctx.assigns.pitch
     }
@@ -47,28 +50,21 @@ defmodule KinoTextToSpeech.TextToSpeechCell do
 
   @impl true
   def handle_event("update_text", text, ctx) do
-    ctx =
-      if Kino.SmartCell.valid_variable_name?(text) do
-        assign(ctx, text: text)
-      else
-        ctx
-      end
-
-    broadcast_event(ctx, "update_text", ctx.assigns.text)
-
+    ctx = assign(ctx, text: text)
+    broadcast_event(ctx, "update_text", text)
     {:noreply, ctx}
   end
 
   def handle_event("update_voice", voice, ctx) do
-    ctx =
-      if Kino.SmartCell.valid_variable_name?(voice) do
-        assign(ctx, voice: voice)
-      else
-        ctx
-      end
+    ctx = assign(ctx, voice: voice)
+    broadcast_event(ctx, "update_voice", voice)
+    {:noreply, ctx}
+  end
 
-    broadcast_event(ctx, "update_voice", ctx.assigns.voice)
-
+  def handle_event("update_volume", volume, ctx) do
+    {:ok, volume} = cast_typed_value("float", volume)
+    ctx = assign(ctx, volume: volume)
+    broadcast_event(ctx, "update_volume", volume)
     {:noreply, ctx}
   end
 
@@ -104,6 +100,7 @@ defmodule KinoTextToSpeech.TextToSpeechCell do
     %{
       "text" => ctx.assigns.text,
       "voice" => ctx.assigns.voice,
+      "volume" => ctx.assigns.volume,
       "rate" => ctx.assigns.rate,
       "pitch" => ctx.assigns.pitch
     }
