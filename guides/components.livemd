@@ -1,0 +1,15 @@
+# Components
+
+```elixir
+Mix.install([
+  {:kino_text_to_speech, "~> 0.1"}
+])
+```
+
+## Kinos
+
+## Smart cells
+
+The following Smart cells are available:
+
+* **Text to Speech** - for speaking text using the browser's [SpeechSynthesis API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis).
