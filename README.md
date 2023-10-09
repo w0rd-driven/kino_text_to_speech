@@ -39,7 +39,11 @@ Mix.install([
 
 ## Demonstrations
 
-* [Introduction](demos/introduction.mp4) - Introduces the basic functionality of `~v0.1`.
+### Introduction
+
+Introduces the basic functionality of `~v0.1`.
+
+https://github.com/w0rd-driven/kino_text_to_speech/assets/489986/8d3f1793-1d30-4219-81c9-37d105a5ebce
 
 ## Caveats
 
