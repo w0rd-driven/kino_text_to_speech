@@ -1,7 +1,7 @@
 defmodule KinoTextToSpeech.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @description "Text to Speech integration with Livebook"
 
   def project do
@@ -29,7 +29,7 @@ defmodule KinoTextToSpeech.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:kino, "~> 0.10"},
+      {:kino, "0.10.0"},
 
       # Dev only
       {:ex_doc, "~> 0.28", only: :dev, runtime: false}

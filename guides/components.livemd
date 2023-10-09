@@ -13,3 +13,4 @@ Mix.install([
 The following Smart cells are available:
 
 * **Text to Speech** - for speaking text using the browser's [SpeechSynthesis API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis).
+  * [Video introduction](https://github.com/w0rd-driven/kino_text_to_speech/assets/489986/8d3f1793-1d30-4219-81c9-37d105a5ebce)
