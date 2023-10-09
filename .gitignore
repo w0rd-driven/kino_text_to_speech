@@ -24,3 +24,6 @@ kino_text_to_speech-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Elixir LS
+/.elixir_ls/
