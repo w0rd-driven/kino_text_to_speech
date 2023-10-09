@@ -10,6 +10,7 @@ for [Livebook](https://github.com/livebook-dev/livebook).
 * [Installation](#installation)
 * [Goals](#goals)
 * [Demonstrations](#demonstrations)
+    * [Introduction](#introduction)
 * [Caveats](#caveats)
 * [Resources](#resources)
     * [Speech Synthesis](#speech-synthesis)
@@ -22,7 +23,7 @@ To bring KinoTextToSpeech to Livebook all you need to do is `Mix.install/2`:
 
 ```elixir
 Mix.install([
-  {:kino_text_to_speech, "~> 0.1.0"}
+  {:kino_text_to_speech, "~> 0.1.1"}
 ])
 ```
 
